@@ -1,310 +1,143 @@
-<!doctype html>
-<html lang="id">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ID Card Generator — Demo</title>
-  <style>
-    :root{--card-w:860px;--card-h:540px;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
-    body{display:flex;gap:24px;padding:28px;background:#0f172a;color:#e6eef8;min-height:100vh}
-    .container{display:flex;gap:24px;align-items:flex-start;width:100%;max-width:1200px;margin:0 auto}
-    .controls{width:360px;background:linear-gradient(180deg,#071027, #071620);padding:18px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,.6)}
-    h1{font-size:18px;margin:0 0 8px}
-    label{display:block;margin-top:12px;font-size:13px;color:#9fb0d4}
-    input[type=text], input[type=file], select{width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);color:inherit}
-    .small{font-size:12px;color:#87a6cf}
-    button{margin-top:14px;padding:10px 12px;border-radius:10px;border:0;background:#2563eb;color:#fff;cursor:pointer}
-    button.secondary{background:#06b6d4}
-    .preview{flex:1;display:flex;flex-direction:column;gap:12px;align-items:center}
-    .card-wrapper{background:linear-gradient(180deg,#0b1220,#071221);padding:20px;border-radius:14px;box-shadow:0 10px 40px rgba(2,6,23,.6)}
-    canvas{width:860px;height:540px;border-radius:8px;background:#fff;display:block}
-    .row{display:flex;gap:8px}
-    .muted{color:#9fb0d4;font-size:13px}
-    .footer{margin-top:6px;font-size:13px;color:#9fb0d4}
-    @media(max-width:980px){body{padding:12px} .container{flex-direction:column} .controls{width:100%} canvas{width:100%;height:auto}}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ID Card Generator</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f0f2f5;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .container {
+        max-width: 400px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    canvas {
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        margin-top: 15px;
+    }
+
+    select, input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 6px;
+        border: 1px solid #bbb;
+    }
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="controls">
-      <h1>ID Card Generator (HTML / JS)</h1>
-      <div class="small">Upload foto, isi data, lalu unduh ID card sebagai image PNG.</div>
 
-      <label>Foto pengguna (jpg/png)</label>
-      <input id="photoInput" type="file" accept="image/*" />
-      <div class="small muted">Foto akan dipotong ke bentuk persegi otomatis.</div>
+<div class="container">
+    <h2>ID Card Generator</h2>
 
-      <label>Nama</label>
-      <input id="fieldName" type="text" value="Nama Lengkap" />
+    <input type="file" id="photoUpload" accept="image/*" />
+    <input type="text" id="name" placeholder="Enter Name" />
+    <input type="text" id="idnum" placeholder="Enter ID Number" />
 
-      <label>Peran / Jabatan</label>
-      <input id="fieldRole" type="text" value="Developer" />
+    <select id="theme">
+        <option value="sppg">Tema SPPG</option>
+        <option value="ktp">Format seperti KTP</option>
+        <option value="corporate_blue">Corporate Biru</option>
+        <option value="corporate_red">Corporate Merah</option>
+        <option value="tech_dark">Tech Dark Mode</option>
+    </select>
 
-      <label>Perusahaan / Instansi</label>
-      <input id="fieldCompany" type="text" value="Contoh Corp" />
+    <canvas id="card" width="600" height="380"></canvas>
+</div>
 
-      <label>ID Number</label>
-      <input id="fieldId" type="text" value="ID-0001" />
+<script>
+let uploadedPhoto = null;
 
-      <label>Template</label>
-      <select id="templateSelect">
-        <option value="blue">Blue Minimal</option>
-        <option value="dark">Dark Stripe</option>
-        <option value="green">Green Accent</option>
-      </select>
+document.getElementById('photoUpload').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt){
+        const img = new Image();
+        img.onload = function(){ uploadedPhoto = img; };
+        img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+function renderCard() {
+    const name = document.getElementById("name").value;
+    const idnum = document.getElementById("idnum").value;
+    const theme = document.getElementById("theme").value;
 
-      <div class="row">
-        <button id="renderBtn">Render Preview</button>
-        <button class="secondary" id="downloadBtn">Download PNG</button>
-      </div>
+    const canvas = document.getElementById("card");
+    const ctx = canvas.getContext("2d");
 
-      <div class="footer">Catatan: Semua proses terjadi di browser (tidak ada upload server).</div>
-    </div>
-
-    <div class="preview">
-      <div class="card-wrapper">
-        <canvas id="cardCanvas" width="860" height="540" role="img" aria-label="Preview ID card"></canvas>
-      </div>
-      <div class="muted">Preview ukuran asli: 860 × 540 px (rasio 16:10). Klik "Download PNG" untuk menyimpan.</div>
-    </div>
-  </div>
-
-  <script>
-    // Simple client-side ID card generator
-    const photoInput = document.getElementById('photoInput');
-    const renderBtn = document.getElementById('renderBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const canvas = document.getElementById('cardCanvas');
-    const ctx = canvas.getContext('2d');
-
-    const fieldName = document.getElementById('fieldName');
-    const fieldRole = document.getElementById('fieldRole');
-    const fieldCompany = document.getElementById('fieldCompany');
-    const fieldId = document.getElementById('fieldId');
-    const templateSelect = document.getElementById('templateSelect');
-
-    let userImage = null;
-
-    // Helper: load image from file input
-    photoInput.addEventListener('change', (e) => {
-      const f = e.target.files && e.target.files[0];
-      if (!f) return;
-      const url = URL.createObjectURL(f);
-      const img = new Image();
-      img.onload = () => {
-        userImage = img; // keep in memory
-        URL.revokeObjectURL(url);
-        renderCard();
-      };
-      img.onerror = () => { alert('Gagal memuat gambar. Coba file lain.'); };
-      img.src = url;
-    });
-
-    // Render on button click
-    renderBtn.addEventListener('click', renderCard);
-
-    downloadBtn.addEventListener('click', () => {
-      renderCard(); // ensure latest
-      const data = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = data;
-      // default filename with name and timestamp
-      const safeName = (fieldName.value || 'id').replace(/[^a-z0-9\-_]/gi, '_').toLowerCase();
-      a.download = `${safeName}_${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    });
-
-    // Main render function
-    function renderCard(){
-      // clear
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-
-      // choose template colors
-      const tpl = templateSelect.value;
-      let bgGradientStart = '#0b1220';
-      let bgGradientEnd = '#071221';
-      let accent = '#2563eb';
-      if(tpl==='blue'){ bgGradientStart='#0f172a'; bgGradientEnd='#07122a'; accent='#2563eb'; }
-      if(tpl==='dark'){ bgGradientStart='#0b0b0f'; bgGradientEnd='#15151a'; accent='#06b6d4'; }
-      if(tpl==='green'){ bgGradientStart='#052e1f'; bgGradientEnd='#052419'; accent='#10b981'; }
-
-      // background KTP-style guilloche
-      ctx.fillStyle = '#b7dced';
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-
-      // simple guilloche pattern
-      const gPattern = document.createElement('canvas');
-      gPattern.width = 200;
-      gPattern.height = 200;
-      const pg = gPattern.getContext('2d');
-      pg.strokeStyle = 'rgba(0,0,0,0.04)';
-      pg.lineWidth = 1;
-
-      for(let i=0;i<20;i++){
-        pg.beginPath();
-        pg.ellipse(100,100,20+i*3,80-i*2, Math.PI/4, 0, Math.PI*2);
-        pg.stroke();
-      }
-
-      const pattern = ctx.createPattern(gPattern,'repeat');
-      ctx.fillStyle = pattern;
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-
-      // SPPG emblem (logo image)
-      const logo = new Image();
-      logo.onload = () => {
-        ctx.save();
-        ctx.globalAlpha = 0.12;
-        const size = 320;
-        ctx.drawImage(logo, canvas.width/2 - size/2, canvas.height/2 - size/2, size, size);
-        ctx.restore();
-      };
-      logo.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAAH0CAIAAABEtEjdAAEAAElEQVR4nOz9Z5glx3Uliq4daY4r76u9NwC64T1AA9CTIkWRojcy'+
-      '...';();(0,0,canvas.width,canvas.height);
-
-      // left panel for photo
-      const padding = 36;
-      const photoX = padding;
-      const photoY = padding;
-      const photoW = 340;
-      const photoH = canvas.height - padding*2;
-
-      // photo background / frame
-      ctx.fillStyle = 'rgba(255,255,255,0.04)';
-      roundRect(ctx, photoX, photoY, photoW, photoH, 14, true, false);
-
-      // draw clipped user image (square center-crop)
-      if(userImage){
-        // compute cropping to square
-        const src = getCenteredSquareCrop(userImage.width, userImage.height);
-        // draw into a rounded clipping mask
-        ctx.save();
-        const radius = 12;
-        const imgPad = 12;
-        const ix = photoX + imgPad;
-        const iy = photoY + imgPad;
-        const iw = photoW - imgPad*2;
-        const ih = photoH - imgPad*2;
-        roundRect(ctx, ix, iy, iw, ih, radius, false, false);
-        ctx.clip();
-        ctx.drawImage(userImage, src.x, src.y, src.size, src.size, ix, iy, iw, ih);
-        ctx.restore();
-
-        // subtle frame
-        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-        ctx.lineWidth = 2;
-        roundRect(ctx, ix, iy, iw, ih, radius, false, true);
-      } else {
-        // placeholder avatar
-        ctx.fillStyle = 'rgba(255,255,255,0.03)';
-        roundRect(ctx, photoX+16, photoY+16, photoW-32, photoH-32, 12, true, false);
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
-        ctx.font = '22px sans-serif';
-        ctx.fillText('No photo uploaded', photoX+30, photoY + photoH/2);
-      }
-
-      // right area: text and accent
-      const rightX = photoX + photoW + 28;
-      const rightW = canvas.width - rightX - padding;
-
-      // decorative accent bar
-      ctx.fillStyle = accent;
-      ctx.fillRect(rightX, photoY, 12, 84);
-
-      // company name top-right
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      ctx.font = '700 28px Inter, sans-serif';
-      ctx.fillText(fieldCompany.value || '', rightX + 24, photoY + 30);
-
-      // big name
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '700 36px Inter, sans-serif';
-      wrapText(ctx, fieldName.value || '', rightX + 24, photoY + 78, rightW - 24, 40);
-
-      // role
-      ctx.fillStyle = 'rgba(255,255,255,0.82)';
-      ctx.font = '600 20px Inter, sans-serif';
-      ctx.fillText(fieldRole.value || '', rightX + 24, photoY + 160);
-
-      // ID and small details
-      ctx.fillStyle = 'rgba(255,255,255,0.66)';
-      ctx.font = '600 14px Inter, sans-serif';
-      ctx.fillText('ID: ' + (fieldId.value || ''), rightX + 24, photoY + 200);
-
-      // footer stripe with company small text and generated date
-      const footerH = 68;
-      const fy = canvas.height - footerH - padding + 6;
-      ctx.fillStyle = 'rgba(0,0,0,0.14)';
-      ctx.fillRect(rightX, fy, rightW, footerH);
-
-      ctx.fillStyle = 'rgba(255,255,255,0.66)';
-      ctx.font = '13px Inter, sans-serif';
-      const now = new Date();
-      ctx.fillText('Issued: ' + now.toLocaleDateString('id-ID'), rightX + 24, fy + 26);
-      ctx.fillText('Verify at: ' + (fieldCompany.value || ''), rightX + 24, fy + 46);
-
-      // subtle watermark
-      ctx.save();
-      ctx.globalAlpha = 0.06;
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '800 48px Inter, sans-serif';
-      ctx.translate(canvas.width - 120, canvas.height - 30);
-      ctx.rotate(-0.25);
-      ctx.fillText(fieldCompany.value || '', 0, 0);
-      ctx.restore();
-    }
-
-    // small utility: rounded rectangle
-    function roundRect(ctx, x, y, w, h, r, fill, stroke){
-      if (typeof r === 'undefined') r = 5;
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + w, y, x + w, y + h, r);
-      ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r);
-      ctx.arcTo(x, y, x + w, y, r);
-      ctx.closePath();
-      if(fill) ctx.fill();
-      if(stroke) ctx.stroke();
-    }
-
-    // center-crop to square
-    function getCenteredSquareCrop(w, h){
-      if(w===h) return {x:0,y:0,size:w};
-      if(w>h){ // landscape -> crop sides
-        const size = h;
-        const x = Math.floor((w - h) / 2);
-        return {x, y:0, size};
-      } else { // portrait -> crop top/bottom
-        const size = w;
-        const y = Math.floor((h - w) / 2);
-        return {x:0, y, size};
-      }
-    }
-
-    // wrap text helper for multi-line name
-    function wrapText(ctx, text, x, y, maxWidth, lineHeight){
-      const words = (text||'').split(' ');
-      let line = '';
-      for(let n = 0; n < words.length; n++){
-        const testLine = line + words[n] + ' ';
-        const metrics = ctx.measureText(testLine);
-        const testWidth = metrics.width;
-        if (testWidth > maxWidth && n > 0){
-          ctx.fillText(line, x, y);
-          line = words[n] + ' ';
-          y += lineHeight;
-        } else {
-          line = testLine;
+    // Background themes
+    const themes = {
+        sppg: {
+            bg: "#003399",
+            logo: "SPPG",
+            color: "white"
+        },
+        ktp: {
+            bg: "#c2e4ff",
+            logo: "REPUBLIK INDONESIA",
+            color: "black"
+        },
+        corporate_blue: {
+            bg: "#0a3d62",
+            logo: "CORP BLUE",
+            color: "white"
+        },
+        corporate_red: {
+            bg: "#b30000",
+            logo: "CORP RED",
+            color: "white"
+        },
+        tech_dark: {
+            bg: "#121212",
+            logo: "TECH-ID",
+            color: "#00eaff"
         }
-      }
-      ctx.fillText(line, x, y);
-    }
+    };
 
-    // initial render
-    renderCard();
-  </script>
+    const t = themes[theme];
+
+    // Draw background
+    ctx.fillStyle = t.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Render photo (rounded)
+if(uploadedPhoto){
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(430, 60, 140, 180, 20);
+    ctx.clip();
+    ctx.drawImage(uploadedPhoto, 430, 60, 140, 180);
+    ctx.restore();
+}
+
+// Logo text
+    ctx.fillStyle = t.color;
+    ctx.font = "bold 32px Arial";
+    ctx.fillText(t.logo, 20, 40);
+
+    // Details
+    ctx.font = "20px Arial";
+    ctx.fillText("Name: " + name, 20, 120);
+    ctx.fillText("ID: " + idnum, 20, 160);
+}
+
+// Real-time update
+setInterval(renderCard, 200);
+</script>
+
 </body>
 </html>
