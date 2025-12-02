@@ -1,143 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
 <title>ID Card Generator</title>
 <style>
     body {
-        font-family: Arial, sans-serif;
-        background: #f0f2f5;
+        font-family: Arial;
+        background: #eef1f5;
         padding: 20px;
         text-align: center;
     }
 
     .container {
-        max-width: 400px;
-        margin: auto;
         background: white;
         padding: 20px;
         border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        width: 420px;
+        margin: auto;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
 
     canvas {
         width: 100%;
+        border-radius: 12px;
         border: 1px solid #ccc;
-        border-radius: 10px;
         margin-top: 15px;
     }
 
-    select, input {
+    input {
         width: 100%;
         padding: 10px;
         margin-top: 10px;
-        border-radius: 6px;
-        border: 1px solid #bbb;
+        border-radius: 8px;
+        border: 1px solid #aaa;
+    }
+
+    button {
+        margin-top: 15px;
+        padding: 12px 20px;
+        border: none;
+        background: #007bff;
+        color: white;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #005fcc;
     }
 </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>ID Card Generator</h2>
+    <h2>ID CARD GENERATOR</h2>
 
-    <input type="file" id="photoUpload" accept="image/*" />
-    <input type="text" id="name" placeholder="Enter Name" />
-    <input type="text" id="idnum" placeholder="Enter ID Number" />
+    <input type="file" id="photoUpload" accept="image/*">
+    <input type="text" id="name" placeholder="Nama">
+    <input type="text" id="idnum" placeholder="Nomor ID">
 
-    <select id="theme">
-        <option value="sppg">Tema SPPG</option>
-        <option value="ktp">Format seperti KTP</option>
-        <option value="corporate_blue">Corporate Biru</option>
-        <option value="corporate_red">Corporate Merah</option>
-        <option value="tech_dark">Tech Dark Mode</option>
-    </select>
+    <button id="downloadBtn">Download ID Card</button>
 
     <canvas id="card" width="600" height="380"></canvas>
 </div>
 
 <script>
 let uploadedPhoto = null;
+let bgLogo = new Image();
+bgLogo.src = "logo_sppg.png"; // gunakan logo kamu
 
-document.getElementById('photoUpload').addEventListener('change', function(e){
+document.getElementById("photoUpload").addEventListener("change", function(e){
     const file = e.target.files[0];
     if(!file) return;
+
     const reader = new FileReader();
     reader.onload = function(evt){
         const img = new Image();
-        img.onload = function(){ uploadedPhoto = img; };
+        img.onload = function(){
+            uploadedPhoto = img;
+            renderCard();
+        };
         img.src = evt.target.result;
     };
     reader.readAsDataURL(file);
 });
-function renderCard() {
+
+function renderCard(){
     const name = document.getElementById("name").value;
     const idnum = document.getElementById("idnum").value;
-    const theme = document.getElementById("theme").value;
 
-    const canvas = document.getElementById("card");
-    const ctx = canvas.getContext("2d");
+    const c = document.getElementById("card");
+    const ctx = c.getContext("2d");
 
-    // Background themes
-    const themes = {
-        sppg: {
-            bg: "#003399",
-            logo: "SPPG",
-            color: "white"
-        },
-        ktp: {
-            bg: "#c2e4ff",
-            logo: "REPUBLIK INDONESIA",
-            color: "black"
-        },
-        corporate_blue: {
-            bg: "#0a3d62",
-            logo: "CORP BLUE",
-            color: "white"
-        },
-        corporate_red: {
-            bg: "#b30000",
-            logo: "CORP RED",
-            color: "white"
-        },
-        tech_dark: {
-            bg: "#121212",
-            logo: "TECH-ID",
-            color: "#00eaff"
-        }
-    };
+    ctx.clearRect(0,0,c.width,c.height);
 
-    const t = themes[theme];
+    // ==== BACKGROUND LOGO (Full Card) ====
+    if(bgLogo.complete){
+        ctx.save();
+        ctx.globalAlpha = 0.18;  // supaya soft
+        ctx.drawImage(bgLogo, 0, 0, c.width, c.height);
+        ctx.restore();
+    }
 
-    // Draw background
-    ctx.fillStyle = t.bg;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // ==== FOTO USER ====
+    if(uploadedPhoto){
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(30, 80, 150, 200, 20);
+        ctx.clip();
+        ctx.drawImage(uploadedPhoto, 30, 80, 150, 200);
+        ctx.restore();
+    }
 
-    // Render photo (rounded)
-if(uploadedPhoto){
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(430, 60, 140, 180, 20);
-    ctx.clip();
-    ctx.drawImage(uploadedPhoto, 430, 60, 140, 180);
-    ctx.restore();
+    // ==== TEXT ====
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 28px Arial";
+    ctx.fillText("SPPG BERINGIN", 220, 60);
+
+    ctx.font = "22px Arial";
+    ctx.fillText("Nama : " + name, 220, 140);
+    ctx.fillText("ID     : " + idnum, 220, 180);
+
+    ctx.font = "18px Arial";
+    ctx.fillText("PANGENAN", 220, 230);
 }
 
-// Logo text
-    ctx.fillStyle = t.color;
-    ctx.font = "bold 32px Arial";
-    ctx.fillText(t.logo, 20, 40);
-
-    // Details
-    ctx.font = "20px Arial";
-    ctx.fillText("Name: " + name, 20, 120);
-    ctx.fillText("ID: " + idnum, 20, 160);
-}
-
-// Real-time update
 setInterval(renderCard, 200);
-</script>
 
+// ==== DOWNLOAD PNG ====
+document.getElementById("downloadBtn").addEventListener("click", function(){
+    const c = document.getElementById("card");
+    const link = document.createElement("a");
+    link.download = "ID_CARD_SPPG.png";
+    link.href = c.toDataURL("image/png");
+    link.click();
+});
+</script>
 </body>
 </html>
