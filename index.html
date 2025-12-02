@@ -130,12 +130,39 @@
       if(tpl==='dark'){ bgGradientStart='#0b0b0f'; bgGradientEnd='#15151a'; accent='#06b6d4'; }
       if(tpl==='green'){ bgGradientStart='#052e1f'; bgGradientEnd='#052419'; accent='#10b981'; }
 
-      // background
-      const g = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
-      g.addColorStop(0,bgGradientStart);
-      g.addColorStop(1,bgGradientEnd);
-      ctx.fillStyle = g;
+      // background KTP-style guilloche
+      ctx.fillStyle = '#b7dced';
       ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      // simple guilloche pattern
+      const gPattern = document.createElement('canvas');
+      gPattern.width = 200;
+      gPattern.height = 200;
+      const pg = gPattern.getContext('2d');
+      pg.strokeStyle = 'rgba(0,0,0,0.04)';
+      pg.lineWidth = 1;
+
+      for(let i=0;i<20;i++){
+        pg.beginPath();
+        pg.ellipse(100,100,20+i*3,80-i*2, Math.PI/4, 0, Math.PI*2);
+        pg.stroke();
+      }
+
+      const pattern = ctx.createPattern(gPattern,'repeat');
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      // SPPG emblem (logo image)
+      const logo = new Image();
+      logo.onload = () => {
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        const size = 320;
+        ctx.drawImage(logo, canvas.width/2 - size/2, canvas.height/2 - size/2, size, size);
+        ctx.restore();
+      };
+      logo.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAAH0CAIAAABEtEjdAAEAAElEQVR4nOz9Z5glx3Uliq4daY4r76u9NwC64T1AA9CTIkWRojcy'+
+      '...';();(0,0,canvas.width,canvas.height);
 
       // left panel for photo
       const padding = 36;
